@@ -3,7 +3,10 @@
     "allow": [
       "Bash(uv run pytest:*)",
       "Bash(python -m pip show:*)",
-      "Bash(python -m uv run:*)"
+      "Bash(python -m uv run:*)",
+      "Bash(wget:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   }
