@@ -7,7 +7,8 @@
       "Bash(wget:*)",
       "Bash(curl:*)",
       "WebFetch(domain:docs.anthropic.com)",
-      "Bash(gunzip:*)"
+      "Bash(gunzip:*)",
+      "Bash(python -m:*)"
     ],
     "deny": []
   }
