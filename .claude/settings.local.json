@@ -11,7 +11,8 @@
       "Bash(python -m:*)",
       "Bash(pip install:*)",
       "Bash(python -m pytest tests/test_tokenizer.py::test_roundtrip_empty -v)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(where uv)"
     ],
     "deny": []
   }
