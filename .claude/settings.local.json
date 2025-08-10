@@ -6,7 +6,8 @@
       "Bash(python -m uv run:*)",
       "Bash(wget:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(gunzip:*)"
     ],
     "deny": []
   }
