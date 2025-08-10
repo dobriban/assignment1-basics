@@ -1,5 +1,5 @@
 import regex as re
-from collections import Counter, defaultdict
+from collections import Counter
 import multiprocessing as mp
 
 def process_text_chunk(chunk_and_pat):
