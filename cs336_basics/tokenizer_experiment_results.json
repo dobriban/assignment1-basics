@@ -1,0 +1,163 @@
+{
+  "tinystories_results": {
+    "tokenizer_name": "TinyStories Tokenizer on TinyStories",
+    "total_bytes": 38420,
+    "total_tokens": 9726,
+    "overall_ratio": 3.950236479539379,
+    "documents": [
+      {
+        "doc_id": 1,
+        "bytes": 7607,
+        "tokens": 1928,
+        "ratio": 3.945539419087137,
+        "preview": "Once upon a time, there was a rich family. They had a lot of food, but the one thing that was specia..."
+      },
+      {
+        "doc_id": 2,
+        "bytes": 4654,
+        "tokens": 1195,
+        "ratio": 3.894560669456067,
+        "preview": "There was a frog named Fred. He lived in a big pond and he really wanted to leave. He decided to set..."
+      },
+      {
+        "doc_id": 3,
+        "bytes": 3470,
+        "tokens": 891,
+        "ratio": 3.8945005611672276,
+        "preview": "Once upon a time there was a little girl called Jane. She was three years old and loved to go and ex..."
+      },
+      {
+        "doc_id": 4,
+        "bytes": 800,
+        "tokens": 189,
+        "ratio": 4.232804232804233,
+        "preview": "John loved to twist things. He twisted the doorknob and he twisted bows on presents. He twisted his ..."
+      },
+      {
+        "doc_id": 5,
+        "bytes": 7724,
+        "tokens": 1934,
+        "ratio": 3.9937952430196484,
+        "preview": "Tommy liked to drink milk before bed. He had a blue cup with a lid and a straw. He drank his milk an..."
+      },
+      {
+        "doc_id": 6,
+        "bytes": 1558,
+        "tokens": 401,
+        "ratio": 3.885286783042394,
+        "preview": "Once there was a farmer who had a hay field. Every day the farmer would shear the hay and bring it t..."
+      },
+      {
+        "doc_id": 7,
+        "bytes": 7465,
+        "tokens": 1909,
+        "ratio": 3.9104243059193293,
+        "preview": "Anna liked to play with her dolls. She had many dolls, but her favorite was Lily. Lily had long yell..."
+      },
+      {
+        "doc_id": 8,
+        "bytes": 1552,
+        "tokens": 375,
+        "ratio": 4.1386666666666665,
+        "preview": "Anna liked to climb. She climbed on chairs, on tables, on beds, on trees. She climbed everywhere she..."
+      },
+      {
+        "doc_id": 9,
+        "bytes": 2110,
+        "tokens": 548,
+        "ratio": 3.8503649635036497,
+        "preview": "Tommy liked to play with his truck. It was big and red and made loud noises. He drove it around the ..."
+      },
+      {
+        "doc_id": 10,
+        "bytes": 1480,
+        "tokens": 356,
+        "ratio": 4.157303370786517,
+        "preview": "Once upon a time, there was a pink bunny named Henry. Henry was very shy and he liked to hide behind..."
+      }
+    ]
+  },
+  "openwebtext_results": {
+    "tokenizer_name": "TinyStories Tokenizer on OpenWebText",
+    "total_bytes": 3216,
+    "total_tokens": 947,
+    "overall_ratio": 3.395987328405491,
+    "documents": [
+      {
+        "doc_id": 1,
+        "bytes": 291,
+        "tokens": 87,
+        "ratio": 3.3448275862068964,
+        "preview": "When They Come Calling doesn't rely on paranormal hooks: it\u2019s not werewolves, vampires, zombies, or ..."
+      },
+      {
+        "doc_id": 2,
+        "bytes": 440,
+        "tokens": 110,
+        "ratio": 4.0,
+        "preview": "Morneau even gave media and his company the impression, back in 2015, that this is exactly what he w..."
+      },
+      {
+        "doc_id": 3,
+        "bytes": 383,
+        "tokens": 137,
+        "ratio": 2.795620437956204,
+        "preview": "It\u2019s good news for Google, though it still pales in comparison to Apple\u2019s $28 billion in revenue it ..."
+      },
+      {
+        "doc_id": 4,
+        "bytes": 233,
+        "tokens": 65,
+        "ratio": 3.5846153846153848,
+        "preview": "Jed is a warrior from another era, haunted by the horrors of a brutal family feud three thousand yea..."
+      },
+      {
+        "doc_id": 5,
+        "bytes": 238,
+        "tokens": 65,
+        "ratio": 3.6615384615384614,
+        "preview": "Anna is a physician from Kansas City. She\u2019s spent her life giving and caring to others while trying ..."
+      },
+      {
+        "doc_id": 6,
+        "bytes": 564,
+        "tokens": 178,
+        "ratio": 3.168539325842697,
+        "preview": "\u201cToday\u2019s judgment is a major blow against mass surveillance and an important day for privacy,\u201d said ..."
+      },
+      {
+        "doc_id": 7,
+        "bytes": 245,
+        "tokens": 73,
+        "ratio": 3.356164383561644,
+        "preview": "Author Royalty -- As a partnership publisher, we believe in compensating authors fairly for their ha..."
+      },
+      {
+        "doc_id": 8,
+        "bytes": 220,
+        "tokens": 53,
+        "ratio": 4.150943396226415,
+        "preview": "We don't want to get ahead of ourselves just yet. Even after the base funding goal is achieved, we'd..."
+      },
+      {
+        "doc_id": 9,
+        "bytes": 146,
+        "tokens": 37,
+        "ratio": 3.945945945945946,
+        "preview": "And not only did Morneau not really answer the question, he even seemed somewhat indignant that he h..."
+      },
+      {
+        "doc_id": 10,
+        "bytes": 456,
+        "tokens": 142,
+        "ratio": 3.211267605633803,
+        "preview": "That meant he held the shares \u201cindirectly\u201d, which ethics commissioner Mary Dawson apparently confirm..."
+      }
+    ]
+  },
+  "summary": {
+    "ts_ratio": 3.950236479539379,
+    "owt_ratio": 3.395987328405491,
+    "difference": -0.5542491511338881
+  }
+}
