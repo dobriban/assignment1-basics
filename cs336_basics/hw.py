@@ -62,11 +62,17 @@ print(find_val)
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
 import regex as re
+from collections import Counter
+
 # a = re.findall(PAT, "some text that i'll pre-tokenize")
 # print(a)
 
 a = re.finditer(PAT, "some text that i'll pre-tokenize")
 print(a)
+
+for match in a:
+    pretoken = match.group(0)
+    print(repr(pretoken), match.span())
 
 #use re.finditer to avoid storing the pre-tokenized words as you construct your mapping from pre-tokens to their count 
 
