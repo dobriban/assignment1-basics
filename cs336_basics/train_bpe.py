@@ -91,8 +91,9 @@ def count_pretokens_parallel(
     split_token = special_tokens[0].encode("utf-8") if special_tokens else b"<|endoftext|>"
 
     with open(input_path, "rb") as f:
-        boundaries = find_chunk_boundaries(f, num_processes, split_token)
-
+        boundaries = find_chunk_boundaries(file=f, desired_num_chunks = num_processes, 
+                                           split_special_token=split_token)
+    
     chunk_args = [
         (input_path, start, end, special_tokens)
         for start, end in zip(boundaries[:-1], boundaries[1:])
