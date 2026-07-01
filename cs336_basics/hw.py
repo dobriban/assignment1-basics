@@ -11,12 +11,16 @@ print("this is a test" + a + "string") #Does not show up
 
 ############
 # %%
-test_string = "hello! こんにちは!"
+test_string = "hこ"
 utf_encoded = test_string.encode("utf-8")
 print(utf_encoded)
 #print(type(utf_encoded))
 # Get the byte values for the encoded string (integers from 0 to 255).
-list(utf_encoded)
+b = list(utf_encoded)
+print(b)
+
+s = utf_encoded.decode("utf-8")
+print(s)
 
 # Problem (unicode2): Unicode Encodings (3 points)
 # %%
