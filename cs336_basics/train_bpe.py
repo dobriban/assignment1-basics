@@ -115,27 +115,37 @@ def count_pretokens_parallel(
 
 
 def _merge_word(
-    word: tuple[bytes, ...],
-    pair_to_merge: tuple[bytes, bytes],
-    merged_token: bytes,
-) -> tuple[bytes, ...]:
-    merged_word: list[bytes] = []
+    word: tuple[int, ...],
+    pair_to_merge: tuple[int, int],
+    merged_token_id: int,
+) -> tuple[int, ...]:
+    first, second = pair_to_merge
+    merged_word: list[int] | None = None
     i = 0
+    n = len(word)
 
-    while i < len(word):
-        if i + 1 < len(word) and (word[i], word[i + 1]) == pair_to_merge:
-            merged_word.append(merged_token)
+    while i < n:
+        if i + 1 < n and word[i] == first and word[i + 1] == second:
+            if merged_word is None:
+                merged_word = list(word[:i])
+            merged_word.append(merged_token_id)
             i += 2
         else:
-            merged_word.append(word[i])
+            if merged_word is not None:
+                merged_word.append(word[i])
             i += 1
+
+    if merged_word is None:
+        return word
 
     return tuple(merged_word)
 
 
-def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]
-              ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    
+def train_bpe(
+    input_path: str,
+    vocab_size: int,
+    special_tokens: list[str],
+) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
     pretoken_counts = count_pretokens_parallel(
         input_path=input_path,
         special_tokens=special_tokens,
@@ -145,7 +155,7 @@ def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]
     vocab: dict[int, bytes] = {i: bytes([i]) for i in range(256)}
     next_token_id = 256
 
-    #special tokens are added to the vocab, They have been separated out and never merged. 
+    # Special tokens are added to the vocab but never merged with other tokens.
     for special_token in special_tokens:
         if next_token_id >= vocab_size:
             break
@@ -154,33 +164,38 @@ def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]
 
     merges: list[tuple[bytes, bytes]] = []
 
-    # Represent each pre-token as a tuple of single-byte tokens.
+    # Represent each pre-token as a tuple of token IDs, initially raw byte IDs.
     # Keep its frequency so pair counts are weighted by how often it appears.
-    tokenized_pretokens: dict[tuple[bytes, ...], int] = {
-        tuple(bytes([byte]) for byte in pretoken.encode("utf-8")): count
+    tokenized_pretokens: dict[tuple[int, ...], int] = {
+        tuple(pretoken.encode("utf-8")): count
         for pretoken, count in pretoken_counts.items()
     }
 
     while next_token_id < vocab_size:
-        pair_counts: Counter[tuple[bytes, bytes]] = Counter()
+        pair_counts: dict[tuple[int, int], int] = {}
 
         for word, count in tokenized_pretokens.items():
-            for pair in zip(word, word[1:]):
-                pair_counts[pair] += count
+            for i in range(len(word) - 1):
+                pair = (word[i], word[i + 1])
+                pair_counts[pair] = pair_counts.get(pair, 0) + count
 
         if not pair_counts:
             break
 
-        best_pair = max(pair_counts, key=lambda pair: (pair_counts[pair], pair))
-        merged_token = best_pair[0] + best_pair[1]
+        best_pair = max(
+            pair_counts,
+            key=lambda pair: (pair_counts[pair], (vocab[pair[0]], vocab[pair[1]])),
+        )
+        left_token, right_token = vocab[best_pair[0]], vocab[best_pair[1]]
+        merged_token = left_token + right_token
 
-        merges.append(best_pair)
+        merges.append((left_token, right_token))
         vocab[next_token_id] = merged_token
-        next_token_id += 1
 
         tokenized_pretokens = {
-            _merge_word(word, best_pair, merged_token): count
+            _merge_word(word, best_pair, next_token_id): count
             for word, count in tokenized_pretokens.items()
         }
+        next_token_id += 1
 
     return vocab, merges
