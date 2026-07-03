@@ -23,6 +23,7 @@
 # train tokenizer on the TinyStories validation set instead, which is 22K docs
 
 import json
+import os
 from pathlib import Path
 import threading
 import time
@@ -33,7 +34,9 @@ from train_bpe import train_bpe
 # path  = "cs336_basics/TinyStories-valid.txt"
 
 #DEFAULT_INPUT_PATH = Path("cs336_basics/test.txt")
-DEFAULT_INPUT_PATH = Path("cs336_basics/TinyStories-valid.txt")
+#DEFAULT_INPUT_PATH = Path("cs336_basics/TinyStories-valid.txt")
+DEFAULT_INPUT_PATH = Path("cs336_basics/TinyStories-train.txt")
+DEFAULT_NUM_PROCESSES = min(os.cpu_count() or 4, 16)
 
 def _total_rss_bytes(process: psutil.Process) -> int:
     total = 0
@@ -73,7 +76,7 @@ def main(input_path: str | Path = DEFAULT_INPUT_PATH) -> None:
             vocab_size=10000,
             special_tokens=["<|endoftext|>"],
             show_progress=True,
-            num_processes=1,
+            num_processes=DEFAULT_NUM_PROCESSES,
         )
     finally:
         elapsed_seconds = time.perf_counter() - start_time

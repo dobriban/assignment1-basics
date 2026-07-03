@@ -82,9 +82,11 @@ for match in a:
 
 # %%
 
-# TinyStories BPE answer:
+# TinyStories (training set) BPE answer:
 # The longest tokens in the vocabulary are 15 bytes long:
-# " accomplishment", " responsibility", and " disappointment".
-# This makes sense because BPE learns frequent byte sequences, and common
-# long English words can become full tokens. The leading space also makes
-# sense because the pre-tokenizer groups a space with the following word.
+# " accomplishment", " responsibility", " disappointment",
+# and " recommendation".
+# This makes sense because BPE learns frequent byte sequences,
+# and common long English words can become full tokens.
+# The leading space also makes sense because the pre-tokenizer
+# groups a space with the following word.

@@ -1,5 +1,6 @@
 import regex as re
 from collections import Counter
+import heapq
 import multiprocessing as mp
 import os
 from typing import BinaryIO
@@ -79,6 +80,12 @@ def _count_pretokens_in_chunk(args: tuple[str, int, int, list[str]]) -> Counter[
     return counts
 
 
+def _desired_num_chunks(file_size: int, num_processes: int) -> int:
+    if file_size >= 64 * 1024 * 1024:
+        return num_processes * 16
+    return num_processes
+
+
 def count_pretokens_parallel(
     input_path: str,
     special_tokens: list[str],
@@ -91,15 +98,20 @@ def count_pretokens_parallel(
     split_token = special_tokens[0].encode("utf-8") if special_tokens else b"<|endoftext|>"
 
     with open(input_path, "rb") as f:
-        boundaries = find_chunk_boundaries(file=f, desired_num_chunks = num_processes, 
-                                           split_special_token=split_token)
-    
+        f.seek(0, os.SEEK_END)
+        file_size = f.tell()
+        f.seek(0)
+        boundaries = find_chunk_boundaries(
+            file=f,
+            desired_num_chunks=_desired_num_chunks(file_size, num_processes),
+            split_special_token=split_token,
+        )
+
     chunk_args = [
         (input_path, start, end, special_tokens)
         for start, end in zip(boundaries[:-1], boundaries[1:])
     ]
 
-    
     total_counts: Counter[str] = Counter()
     if num_processes == 1 or len(chunk_args) <= 1:
         for args in chunk_args:
@@ -112,6 +124,33 @@ def count_pretokens_parallel(
             total_counts.update(counts)
 
     return total_counts
+
+
+class _ReversePairKey:
+    __slots__ = ("key",)
+
+    def __init__(self, pair_bytes: tuple[bytes, bytes]) -> None:
+        self.key = pair_bytes
+
+    def __lt__(self, other: "_ReversePairKey") -> bool:
+        return self.key > other.key
+
+
+def _pair_counts_for_word(word: tuple[int, ...]) -> dict[tuple[int, int], int]:
+    pair_counts: dict[tuple[int, int], int] = {}
+    for i in range(len(word) - 1):
+        pair = (word[i], word[i + 1])
+        pair_counts[pair] = pair_counts.get(pair, 0) + 1
+    return pair_counts
+
+
+def _push_pair(
+    heap: list[tuple[int, _ReversePairKey, tuple[int, int]]],
+    pair: tuple[int, int],
+    count: int,
+    vocab: dict[int, bytes],
+) -> None:
+    heapq.heappush(heap, (-count, _ReversePairKey((vocab[pair[0]], vocab[pair[1]])), pair))
 
 
 def _merge_word(
@@ -182,36 +221,77 @@ def train_bpe(
 
     # Represent each pre-token as a tuple of token IDs, initially raw byte IDs.
     # Keep its frequency so pair counts are weighted by how often it appears.
-    tokenized_pretokens: dict[tuple[int, ...], int] = {
+    tokenized_pretokens = {
         tuple(pretoken.encode("utf-8")): count
         for pretoken, count in pretoken_counts.items()
     }
 
+    words = list(tokenized_pretokens.keys())
+    word_counts = list(tokenized_pretokens.values())
+    pair_counts: dict[tuple[int, int], int] = {}
+    pair_to_word_ids: dict[tuple[int, int], set[int]] = {}
+
+    for word_id, word in enumerate(words):
+        word_pair_counts = _pair_counts_for_word(word)
+        for pair, occurrences in word_pair_counts.items():
+            pair_counts[pair] = pair_counts.get(pair, 0) + occurrences * word_counts[word_id]
+            pair_to_word_ids.setdefault(pair, set()).add(word_id)
+
+    pair_heap: list[tuple[int, _ReversePairKey, tuple[int, int]]] = []
+    for pair, count in pair_counts.items():
+        _push_pair(pair_heap, pair, count, vocab)
+
     while next_token_id < vocab_size:
-        pair_counts: dict[tuple[int, int], int] = {}
+        best_pair: tuple[int, int] | None = None
+        while pair_heap:
+            neg_count, _, pair = heapq.heappop(pair_heap)
+            if pair_counts.get(pair, 0) == -neg_count:
+                best_pair = pair
+                break
 
-        for word, count in tokenized_pretokens.items():
-            for i in range(len(word) - 1):
-                pair = (word[i], word[i + 1])
-                pair_counts[pair] = pair_counts.get(pair, 0) + count
-
-        if not pair_counts:
+        if best_pair is None:
             break
 
-        best_pair = max(
-            pair_counts,
-            key=lambda pair: (pair_counts[pair], (vocab[pair[0]], vocab[pair[1]])),
-        )
         left_token, right_token = vocab[best_pair[0]], vocab[best_pair[1]]
         merged_token = left_token + right_token
 
         merges.append((left_token, right_token))
         vocab[next_token_id] = merged_token
 
-        tokenized_pretokens = {
-            _merge_word(word, best_pair, next_token_id): count
-            for word, count in tokenized_pretokens.items()
-        }
+        affected_word_ids = list(pair_to_word_ids.pop(best_pair, set()))
+        pair_count_deltas: dict[tuple[int, int], int] = {}
+
+        for word_id in affected_word_ids:
+            old_word = words[word_id]
+            new_word = _merge_word(old_word, best_pair, next_token_id)
+            if new_word == old_word:
+                continue
+
+            word_count = word_counts[word_id]
+            old_pair_counts = _pair_counts_for_word(old_word)
+            new_pair_counts = _pair_counts_for_word(new_word)
+            words[word_id] = new_word
+
+            for pair, occurrences in old_pair_counts.items():
+                word_ids = pair_to_word_ids.get(pair)
+                if word_ids is not None:
+                    word_ids.discard(word_id)
+                    if not word_ids:
+                        del pair_to_word_ids[pair]
+                pair_count_deltas[pair] = pair_count_deltas.get(pair, 0) - occurrences * word_count
+
+            for pair, occurrences in new_pair_counts.items():
+                pair_to_word_ids.setdefault(pair, set()).add(word_id)
+                pair_count_deltas[pair] = pair_count_deltas.get(pair, 0) + occurrences * word_count
+
+        for pair, delta in pair_count_deltas.items():
+            new_count = pair_counts.get(pair, 0) + delta
+            if new_count <= 0:
+                pair_counts.pop(pair, None)
+            else:
+                pair_counts[pair] = new_count
+                _push_pair(pair_heap, pair, new_count, vocab)
+
         next_token_id += 1
         if show_progress:
             next_progress_percent = _print_progress(
