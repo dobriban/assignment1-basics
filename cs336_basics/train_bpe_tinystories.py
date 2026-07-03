@@ -73,6 +73,7 @@ def main(input_path: str | Path = DEFAULT_INPUT_PATH) -> None:
             vocab_size=10000,
             special_tokens=["<|endoftext|>"],
             show_progress=True,
+            num_processes=1,
         )
     finally:
         elapsed_seconds = time.perf_counter() - start_time

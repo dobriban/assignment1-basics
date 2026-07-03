@@ -158,11 +158,12 @@ def train_bpe(
     vocab_size: int,
     special_tokens: list[str],
     show_progress: bool = False,
+    num_processes: int = 4,
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
     pretoken_counts = count_pretokens_parallel(
         input_path=input_path,
         special_tokens=special_tokens,
-        num_processes=4,
+        num_processes=num_processes,
     )
 
     vocab: dict[int, bytes] = {i: bytes([i]) for i in range(256)}

@@ -48976,7 +48976,7 @@
     ]
   ],
   "metrics": {
-    "training_time_seconds": 116.01775590001489,
-    "peak_memory_mb": 170.89453125
+    "training_time_seconds": 348.2960990999709,
+    "peak_memory_mb": 118.56640625
   }
 }
