@@ -2069,5 +2069,9 @@
       "20",
       "46726f6d"
     ]
-  ]
+  ],
+  "metrics": {
+    "training_time_seconds": 0.15774659998714924,
+    "peak_memory_mb": 96.41796875
+  }
 }

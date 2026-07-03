@@ -1,6 +1,5 @@
 # Train a byte-level BPE tokenizer on the TinyStories dataset, 
-# using a maximum vocabulary
-# size of 10,000. 
+# using a maximum vocabulary size of 10,000. 
 
 # Make sure to add the TinyStories <|endoftext|> special token to the
 # vocabulary. 
@@ -24,27 +23,76 @@
 # train tokenizer on the TinyStories validation set instead, which is 22K docs
 
 import json
+from pathlib import Path
+import threading
+import time
 
+import psutil
 from train_bpe import train_bpe
 
 # path  = "cs336_basics/TinyStories-valid.txt"
 
-def main():
-    input_path = "cs336_basics/test.txt"
+#DEFAULT_INPUT_PATH = Path("cs336_basics/test.txt")
+DEFAULT_INPUT_PATH = Path("cs336_basics/TinyStories-valid.txt")
 
-    vocab, merges = train_bpe(
-        input_path=input_path,
-        vocab_size=10000,
-        special_tokens=["<|endoftext|>"],
+def _total_rss_bytes(process: psutil.Process) -> int:
+    total = 0
+    for proc in [process, *process.children(recursive=True)]:
+        try:
+            total += proc.memory_info().rss
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
+            pass
+    return total
+
+
+def _sample_peak_memory(stop_event: threading.Event, peak_memory: list[int]) -> None:
+    process = psutil.Process()
+    while not stop_event.is_set():
+        peak_memory[0] = max(peak_memory[0], _total_rss_bytes(process))
+        time.sleep(0.05)
+    peak_memory[0] = max(peak_memory[0], _total_rss_bytes(process))
+
+
+def result_path_for_input(input_path: str | Path) -> Path:
+    input_path = Path(input_path)
+    return input_path.with_name(f"{input_path.stem}_res.json")
+
+
+def main(input_path: str | Path = DEFAULT_INPUT_PATH) -> None:
+    stop_event = threading.Event()
+    peak_memory = [_total_rss_bytes(psutil.Process())]
+    memory_sampler = threading.Thread(
+        target=_sample_peak_memory,
+        args=(stop_event, peak_memory),
     )
-    
-    output_path = "cs336_basics/test_res.json"
+    memory_sampler.start()
+    start_time = time.perf_counter()
+    try:
+        vocab, merges = train_bpe(
+            input_path=str(input_path),
+            vocab_size=10000,
+            special_tokens=["<|endoftext|>"],
+        )
+    finally:
+        elapsed_seconds = time.perf_counter() - start_time
+        stop_event.set()
+        memory_sampler.join()
+
+    output_path = result_path_for_input(input_path)
     result = {
         "vocab": {str(token_id): token.hex() for token_id, token in vocab.items()},
         "merges": [[left.hex(), right.hex()] for left, right in merges],
+        "metrics": {
+            "training_time_seconds": elapsed_seconds,
+            "peak_memory_mb": peak_memory[0] / (1024 * 1024),
+        },
     }
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
+
+    print(f"Output path: {output_path}")
+    print(f"Training time: {elapsed_seconds:.2f} seconds")
+    print(f"Peak memory: {peak_memory[0] / (1024 * 1024):.2f} MB")
 
 
 if __name__ == "__main__":
