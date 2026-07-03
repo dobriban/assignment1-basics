@@ -164,3 +164,8 @@ cython_debug/
 
 # TinyStories dataset files
 *.txt
+
+# OpenWebText local data and resumable checkpoints
+cs336_basics/openwebtext_data/
+cs336_basics/openwebtext_work/
+cs336_basics/openwebtext_bpe/

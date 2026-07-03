@@ -7,9 +7,11 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "einops>=0.8",      # tensor operations
     "einx>=0.4",        # more general tensor operations
+    "huggingface-hub>=0.26",
     "jaxtyping>=0.3",   # type hints for pytorch/jax/numpy
     "numpy>=2.4",
     "psutil>=7",
+    "pyarrow>=18",
     "pytest>=9.0",
     "pytest-timeout",
     "regex>=2026.3.32", # more powerful regex than the builtin `re` module

@@ -1,5 +1,6 @@
 import regex as re
 from collections import Counter
+from collections.abc import Iterable
 import heapq
 import multiprocessing as mp
 import os
@@ -63,19 +64,32 @@ def _count_pretokens_in_chunk(args: tuple[str, int, int, list[str]]) -> Counter[
         f.seek(start)
         chunk = f.read(end - start).decode("utf-8", errors="ignore")
 
+    return count_pretokens_in_texts([chunk], special_tokens)
+
+
+def count_pretokens_in_texts(
+    texts: Iterable[str],
+    special_tokens: list[str],
+) -> Counter[str]:
+    """Count regex pre-tokens in already-decoded text strings."""
     counts: Counter[str] = Counter()
 
     if special_tokens:
         special_token_pattern = "|".join(
             re.escape(token) for token in sorted(special_tokens, key=len, reverse=True)
         )
-        text_parts = re.split(special_token_pattern, chunk)
     else:
-        text_parts = [chunk]
+        special_token_pattern = ""
 
-    for text_part in text_parts:
-        for match in re.finditer(PAT, text_part):
-            counts[match.group(0)] += 1
+    for text in texts:
+        if special_token_pattern:
+            text_parts = re.split(special_token_pattern, text)
+        else:
+            text_parts = [text]
+
+        for text_part in text_parts:
+            for match in re.finditer(PAT, text_part):
+                counts[match.group(0)] += 1
 
     return counts
 
@@ -204,6 +218,22 @@ def train_bpe(
         special_tokens=special_tokens,
         num_processes=num_processes,
     )
+
+    return train_bpe_from_pretoken_counts(
+        pretoken_counts=pretoken_counts,
+        vocab_size=vocab_size,
+        special_tokens=special_tokens,
+        show_progress=show_progress,
+    )
+
+
+def train_bpe_from_pretoken_counts(
+    pretoken_counts: Counter[str],
+    vocab_size: int,
+    special_tokens: list[str],
+    show_progress: bool = False,
+) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+    """Train byte-level BPE from precomputed pre-token counts."""
 
     vocab: dict[int, bytes] = {i: bytes([i]) for i in range(256)}
     next_token_id = 256
