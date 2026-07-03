@@ -141,10 +141,23 @@ def _merge_word(
     return tuple(merged_word)
 
 
+def _print_progress(completed_merges: int, total_merges: int, next_percent: int) -> int:
+    if total_merges <= 0:
+        return next_percent
+
+    percent_complete = min(100, completed_merges * 100 // total_merges)
+    while next_percent <= percent_complete:
+        print(f"BPE training progress: {next_percent}% ({completed_merges}/{total_merges} merges)")
+        next_percent += 1
+
+    return next_percent
+
+
 def train_bpe(
     input_path: str,
     vocab_size: int,
     special_tokens: list[str],
+    show_progress: bool = False,
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
     pretoken_counts = count_pretokens_parallel(
         input_path=input_path,
@@ -163,6 +176,8 @@ def train_bpe(
         next_token_id += 1
 
     merges: list[tuple[bytes, bytes]] = []
+    total_merges = max(vocab_size - next_token_id, 0)
+    next_progress_percent = 1
 
     # Represent each pre-token as a tuple of token IDs, initially raw byte IDs.
     # Keep its frequency so pair counts are weighted by how often it appears.
@@ -197,5 +212,11 @@ def train_bpe(
             for word, count in tokenized_pretokens.items()
         }
         next_token_id += 1
+        if show_progress:
+            next_progress_percent = _print_progress(
+                completed_merges=len(merges),
+                total_merges=total_merges,
+                next_percent=next_progress_percent,
+            )
 
     return vocab, merges
