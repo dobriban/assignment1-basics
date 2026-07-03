@@ -81,3 +81,10 @@ for match in a:
 #use re.finditer to avoid storing the pre-tokenized words as you construct your mapping from pre-tokens to their count 
 
 # %%
+
+# TinyStories BPE answer:
+# The longest tokens in the vocabulary are 15 bytes long:
+# " accomplishment", " responsibility", and " disappointment".
+# This makes sense because BPE learns frequent byte sequences, and common
+# long English words can become full tokens. The leading space also makes
+# sense because the pre-tokenizer groups a space with the following word.
