@@ -83,10 +83,48 @@ for match in a:
 # %%
 
 # TinyStories (training set) BPE answer:
-# The longest tokens in the vocabulary are 15 bytes long:
+# From TinyStories-train_res.json, the 10,000-token vocabulary has a
+# four-way tie for longest token. Each is 15 bytes:
 # " accomplishment", " responsibility", " disappointment",
 # and " recommendation".
-# This makes sense because BPE learns frequent byte sequences,
-# and common long English words can become full tokens.
-# The leading space also makes sense because the pre-tokenizer
-# groups a space with the following word.
+#
+# Yes, this makes sense. BPE learns frequent byte sequences, so common
+# long words in TinyStories can become full tokens. The leading space also
+# makes sense because the pre-tokenizer groups an optional space with the
+# following word.
+#
+# Resource check: training took 48.60 seconds and peaked at 980.86 MB RAM,
+# so it is well within the <= 12 hours, no-GPU, <= 100 GB RAM requirement.
+
+# TinyStories profiling answer:
+# Profiling shows that pre-tokenization/counting dominates runtime: it took about
+# 44.1 seconds, compared with about 3.2 seconds for the BPE merge loop. 
+
+
+
+# %%
+# Problem (train_bpe_tinystories): BPE Training on TinyStories (2 points)
+
+# (a)
+# From openwebtext_32000_res.json, the 32,000-token vocabulary has a
+# two-way tie for longest token. Each is 64 bytes:
+# "----------------------------------------------------------------"
+# and the mojibake-looking byte sequence c382c383 repeated 16 times
+# (decoded as "\xc2\xc3" repeated 16 times).
+#
+# This also makes sense, but for a different reason than TinyStories. OpenWebText
+# is noisy web text, so frequent repeated separators and encoding artifacts can
+# be common enough for byte-level BPE to merge into long tokens. These tokens are
+# not semantically meaningful words; they reflect frequent byte patterns in the
+# corpus.
+#
+# Resource check: the full run took 2719.79 seconds total, with 1369.81 seconds
+# spent in final BPE training, and peaked at 24015.13 MB RAM. This is also within
+# the <= 12 hours, no-GPU, <= 100 GB RAM requirement.
+
+# (b) Tokenizer comparison:
+# The TinyStories tokenizer learns many whole, common story-like English words,
+# while the OpenWebText tokenizer also spends vocabulary slots on web artifacts
+# such as long separators and encoding noise. Both are byte-level BPE tokenizers,
+# but their learned vocabularies reflect the style and cleanliness of their
+# training corpora.
