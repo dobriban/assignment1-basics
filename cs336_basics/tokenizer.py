@@ -9,22 +9,6 @@ import regex as re
 from cs336_basics.train_bpe import PAT
 
 
-def _gpt2_bytes_to_unicode() -> dict[int, str]:
-    bs = (
-        list(range(ord("!"), ord("~") + 1))
-        + list(range(161, 173))
-        + list(range(174, 256))
-    )
-    cs = bs[:]
-    n = 0
-    for b in range(2**8):
-        if b not in bs:
-            bs.append(b)
-            cs.append(2**8 + n)
-            n += 1
-    return dict(zip(bs, [chr(n) for n in cs]))
-
-
 def _is_hex_string(value: str) -> bool:
     if len(value) % 2 != 0:
         return False
@@ -45,85 +29,36 @@ def _load_vocab(vocab_filepath: str | os.PathLike) -> dict[int, bytes]:
     if not isinstance(payload, dict):
         raise ValueError("vocab file must contain a JSON object")
 
-    # Native assignment serialization used by the local training scripts:
-    # {"0": "00", "1": "01", ...}
-    if all(str(key).lstrip("-").isdigit() for key in payload):
-        vocab: dict[int, bytes] = {}
-        for key, value in payload.items():
-            token_id = int(key)
-            if isinstance(value, str):
-                vocab[token_id] = bytes.fromhex(value)
-            elif isinstance(value, list):
-                vocab[token_id] = bytes(value)
-            else:
-                raise ValueError(f"unsupported vocab value for token {token_id}: {value!r}")
-        return vocab
-
-    # GPT-2-style JSON maps printable byte strings to token IDs.
-    byte_decoder = {v: k for k, v in _gpt2_bytes_to_unicode().items()}
-    return {
-        int(token_id): bytes(byte_decoder[char] for char in token)
-        for token, token_id in payload.items()
-    }
+    vocab: dict[int, bytes] = {}
+    for key, value in payload.items():
+        if not str(key).isdigit() or not isinstance(value, str) or not _is_hex_string(value):
+            raise ValueError("vocab must map stringified integer token IDs to hex-encoded bytes")
+        vocab[int(key)] = bytes.fromhex(value)
+    return vocab
 
 
-def _decode_merge_piece(piece: str, byte_decoder: dict[str, int], allow_hex: bool) -> bytes:
-    if allow_hex and _is_hex_string(piece):
-        return bytes.fromhex(piece)
-    return bytes(byte_decoder[char] for char in piece)
+def _decode_hex_token(value: str) -> bytes:
+    if not isinstance(value, str) or not _is_hex_string(value):
+        raise ValueError("merge entries must be hex-encoded byte strings")
+    return bytes.fromhex(value)
 
 
 def _load_merges(merges_filepath: str | os.PathLike) -> list[tuple[bytes, bytes]]:
     with open(merges_filepath, encoding="utf-8") as f:
-        raw = f.read()
-
-    byte_decoder = {v: k for k, v in _gpt2_bytes_to_unicode().items()}
-
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        merges: list[tuple[bytes, bytes]] = []
-        for line in raw.splitlines():
-            parts = line.rstrip().split(" ")
-            if len(parts) != 2:
-                continue
-            left, right = parts
-            merges.append(
-                (
-                    _decode_merge_piece(left, byte_decoder, allow_hex=False),
-                    _decode_merge_piece(right, byte_decoder, allow_hex=False),
-                )
-            )
-        return merges
+        payload = json.load(f)
 
     if isinstance(payload, dict) and "merges" in payload:
         payload = payload["merges"]
 
     if not isinstance(payload, list):
-        raise ValueError("merges file must contain a JSON list or a two-column text file")
-
-    allow_hex = all(
-        isinstance(item, (list, tuple))
-        and len(item) == 2
-        and all(isinstance(piece, str) and _is_hex_string(piece) for piece in item)
-        for item in payload
-    )
+        raise ValueError("merges file must contain a JSON list")
 
     merges = []
     for item in payload:
-        if isinstance(item, str):
-            parts = item.split(" ")
-        else:
-            parts = item
-        if len(parts) != 2:
+        if not isinstance(item, list) or len(item) != 2:
             raise ValueError(f"merge entries must have length 2: {item!r}")
-        left, right = parts
-        merges.append(
-            (
-                _decode_merge_piece(left, byte_decoder, allow_hex=allow_hex),
-                _decode_merge_piece(right, byte_decoder, allow_hex=allow_hex),
-            )
-        )
+        left, right = item
+        merges.append((_decode_hex_token(left), _decode_hex_token(right)))
     return merges
 
 
