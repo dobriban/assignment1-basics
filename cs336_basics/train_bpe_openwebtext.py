@@ -31,6 +31,7 @@ DEFAULT_OUTPUT_PATH = Path("cs336_basics/openwebtext_bpe/openwebtext_32000_res.j
 DEFAULT_VOCAB_SIZE = 32_000
 DEFAULT_BATCH_SIZE = 2_048
 DEFAULT_NUM_PROCESSES = min(os.cpu_count() or 4, 16)
+DEFAULT_HF_TOKEN_ENV = "HF_TOKEN"
 
 
 def _total_rss_bytes(process: psutil.Process) -> int:
@@ -72,12 +73,32 @@ def _read_pickle(path: Path) -> object:
         return pickle.load(f)
 
 
-def list_openwebtext_shards(max_shards: int | None = None) -> list[str]:
+def get_hf_token(token_env: str | None) -> str | None:
+    if token_env is None:
+        return None
+
+    env_names = [token_env]
+    for fallback_env in ("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"):
+        if fallback_env not in env_names:
+            env_names.append(fallback_env)
+
+    for env_name in env_names:
+        token = os.environ.get(env_name)
+        if token:
+            return token
+    return None
+
+
+def list_openwebtext_shards(
+    max_shards: int | None = None,
+    hf_token: str | None = None,
+) -> list[str]:
     api = HfApi()
     entries = api.list_repo_tree(
         repo_id=REPO_ID,
         path_in_repo=DATASET_SUBDIR,
         repo_type=REPO_TYPE,
+        token=hf_token,
     )
     shards = sorted(
         entry.path
@@ -93,6 +114,7 @@ def download_shard(
     shard_path: str,
     data_dir: Path,
     local_files_only: bool = False,
+    hf_token: str | None = None,
 ) -> Path:
     downloaded_path = hf_hub_download(
         repo_id=REPO_ID,
@@ -100,6 +122,7 @@ def download_shard(
         repo_type=REPO_TYPE,
         local_dir=data_dir,
         local_files_only=local_files_only,
+        token=hf_token,
     )
     return Path(downloaded_path)
 
@@ -193,6 +216,7 @@ def build_pretoken_checkpoints(
     force_recount: bool,
     local_files_only: bool,
     delete_shards_after_counting: bool,
+    hf_token: str | None,
 ) -> tuple[list[str], int]:
     completed_shards: list[str] = []
     documents_seen = 0
@@ -214,6 +238,7 @@ def build_pretoken_checkpoints(
             shard_path=shard_path,
             data_dir=data_dir,
             local_files_only=local_files_only,
+            hf_token=hf_token,
         )
 
         print(f"[{shard_index}/{len(shards)}] Counting pre-tokens in {parquet_path}")
@@ -286,9 +311,17 @@ def main() -> None:
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--skip-final-train", action="store_true")
     parser.add_argument("--delete-shards-after-counting", action="store_true")
+    parser.add_argument("--hf-token-env", default=DEFAULT_HF_TOKEN_ENV)
     args = parser.parse_args()
 
-    shards = list_openwebtext_shards(max_shards=args.max_shards)
+    hf_token = get_hf_token(args.hf_token_env)
+    if hf_token is None and not args.local_files_only:
+        print(
+            "No Hugging Face token found. Set HF_TOKEN or pass --hf-token-env "
+            "with the name of an environment variable containing your token."
+        )
+
+    shards = list_openwebtext_shards(max_shards=args.max_shards, hf_token=hf_token)
     if not shards:
         raise RuntimeError("No OpenWebText parquet shards found.")
 
@@ -310,6 +343,7 @@ def main() -> None:
             force_recount=args.force_recount,
             local_files_only=args.local_files_only,
             delete_shards_after_counting=args.delete_shards_after_counting,
+            hf_token=hf_token,
         )
 
         if args.skip_final_train:
