@@ -128,3 +128,33 @@ for match in a:
 # such as long separators and encoding noise. Both are byte-level BPE tokenizers,
 # but their learned vocabularies reflect the style and cleanliness of their
 # training corpora.
+
+
+# %%
+# Problem (tokenizer_experiments): Experiments with tokenizers (4 points)
+# (a) Sample 10 documents from TinyStories and OpenWebText. Using your previously-trained
+# TinyStories and OpenWebText tokenizers (10K and 32K vocabulary size, respectively),
+# encode these sampled documents into integer IDs. What is each tokenizer’s compression ratio
+# (bytes/token)?
+# Deliverable: A one-to-two sentence response.
+
+# Using a fixed random seed of 0 and 10 sampled documents 
+# from each validation set, 
+# the TinyStories 10K tokenizer achieves 4.244 bytes/token on TinyStories, 
+# while 
+# the OpenWebText 32K tokenizer achieves 4.681 bytes/token on OpenWebText.
+
+
+# (b) What happens if you tokenize your OpenWebText sample with the TinyStories tokenizer?
+# Compare the compression ratio and/or qualitatively describe what happens.
+# Deliverable: A one-to-two sentence response.
+
+# (c) Estimate the throughput of your tokenizer (e.g., in bytes/second). How long would it take to
+# tokenize the Pile dataset (825GB of text)?
+# Deliverable: A one-to-two sentence response.
+
+# (d) Using your TinyStories and OpenWebText tokenizers, encode the respective training and
+# development datasets into a sequence of integer token IDs. We’ll use this later to train our
+# language model. We recommend serializing the token IDs as a NumPy array of datatype
+# uint16. Why is uint16 an appropriate choice?
+# Deliverable: A one-to-two sentence response.
